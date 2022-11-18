@@ -53,7 +53,7 @@ class PostController extends Controller
             $image->move($destinationPath, $featuredImage);
             $input['featured_image'] = "$featuredImage";
         }
-
+        $input['slug'] = strtolower($request->get('title'));
         Post::create($input);
 
         return redirect()->route('posts.index')
@@ -106,6 +106,7 @@ class PostController extends Controller
         } else {
             unset($input['featured_image']);
         }
+        $input['slug'] = strtolower($request->get('title'));
 
         $post->update($input);
 
