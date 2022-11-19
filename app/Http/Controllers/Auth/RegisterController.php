@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Providers\RouteServiceProvider;
+use App\Interfaces\UserRepositoryInterface;
 use App\Models\User;
+use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Request;
 
 class RegisterController extends Controller
 {
+    private UserRepositoryInterface $userRepository;
+
     /*
     |--------------------------------------------------------------------------
     | Register Controller
@@ -20,7 +24,7 @@ class RegisterController extends Controller
     | validation and creation. By default this controller uses a trait to
     | provide this functionality without requiring any additional code.
     |
-    */
+     */
 
     use RegistersUsers;
 
@@ -29,18 +33,33 @@ class RegisterController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = RouteServiceProvider::HOME;
+    protected $redirectTo =  RouteServiceProvider::HOME;
 
     /**
      * Create a new controller instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(UserRepositoryInterface $userRepository)
     {
+        $this->userRepository = $userRepository;
+
         $this->middleware('guest');
     }
-
+    public function showRegistrationForm()
+    {
+        return view('auth.register');
+    }
+    public function register(Request $request)
+    {
+        $this->validator($request->all())->validate();
+        $data = $this->create($request->all());
+        if ($data == "Error" ) {
+            $message = 'Name Already Exists';
+            return redirect()->back()->withErrors(['msg' => 'Name already exists.']);
+        }
+        return redirect(RouteServiceProvider::HOME);
+    }
     /**
      * Get a validator for an incoming registration request.
      *
@@ -64,10 +83,11 @@ class RegisterController extends Controller
      */
     protected function create(array $data)
     {
-        return User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-        ]);
+
+        if ($this->userRepository->checkUserName($data['name']) == false) {
+            return 'Error';
+        }
+        $this->userRepository->createUser($data);
     }
+
 }
